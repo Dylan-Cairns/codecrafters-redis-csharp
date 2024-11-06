@@ -28,14 +28,14 @@ try
 
         var clientSocket = server.AcceptSocket();
 
-        Threat clientThread = new Thread(() => HandleConnectionAsync(clientSocket)
+        Threat clientThread = new Thread(() => HandleConnectionAsync(clientSocket);
     }
 } catch (SocketException e)
 {
     Console.WriteLine(e.ToString());
 } finally
 {
-    server.Stop()    
+    server.Stop();
 }
 
 
