@@ -2,12 +2,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-
 static void HandleConnectionAsync(Socket socket)
 {
     while (clientSocket.Connected)
     {
-
         var buffer = new byte[1024];
 
         await clientSocket.ReceiveAsync(buffer);
@@ -28,15 +26,14 @@ try
 
         var clientSocket = server.AcceptSocket();
 
-        Threat clientThread = new Thread(() => HandleConnectionAsync(clientSocket);
+        Threat clientThread = new Thread(() => HandleConnectionAsync(clientSocket));
     }
-} catch (SocketException e)
+}
+catch (SocketException e)
 {
     Console.WriteLine(e.ToString());
-} finally
+}
+finally
 {
     server.Stop();
 }
-
-
-
