@@ -2,21 +2,41 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
 
+static void HandleConnectionAsync(Socket socket)
+{
+    while (clientSocket.Connected)
+    {
+
+        var buffer = new byte[1024];
+
+        await clientSocket.ReceiveAsync(buffer);
+
+        await clientSocket.SendAsync(Encoding.ASCII.GetBytes("+PONG\r\n"));
+    }
+}
 
 TcpListener server = new TcpListener(IPAddress.Any, 6379);
-server.Start();
-var clientSocket = server.AcceptSocket();
 
-while (clientSocket.Connected)
+try
 {
+    server.Start();
 
-    var buffer = new byte[1024];
+    while (true)
+    {
+        Console.WriteLine("Waiting for a connection");
 
-    await clientSocket.ReceiveAsync(buffer);
+        var clientSocket = server.AcceptSocket();
 
-    await clientSocket.SendAsync(Encoding.ASCII.GetBytes("+PONG\r\n"));
-
+        Threat clientThread = new Thread(() => HandleConnectionAsync(clientSocket)
+    }
+} catch (SocketException e)
+{
+    Console.WriteLine(e.ToString());
+} finally
+{
+    server.Stop()    
 }
+
+
+
