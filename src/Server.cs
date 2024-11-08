@@ -6,13 +6,16 @@ static void HandleConnectionAsync(Socket socket)
 {
     try
     {
+        var buffer = new byte[1024];
+
         while (socket.Connected)
         {
-            var buffer = new byte[1024];
+            int bytesRead = socket.Receive(buffer);
 
-            socket.ReceiveAsync(buffer);
+            if (bytesRead == 0)
+                break;
 
-            socket.SendAsync(Encoding.ASCII.GetBytes("+PONG\r\n"));
+            socket.Send(Encoding.ASCII.GetBytes("+PONG\r\n"));
         }
     }
     catch (SocketException e)
