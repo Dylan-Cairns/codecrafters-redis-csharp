@@ -4,13 +4,24 @@ using System.Text;
 
 static void HandleConnectionAsync(Socket socket)
 {
-    while (socket.Connected)
+    try
     {
-        var buffer = new byte[1024];
+        while (socket.Connected)
+        {
+            var buffer = new byte[1024];
 
-        socket.ReceiveAsync(buffer);
+            socket.ReceiveAsync(buffer);
 
-        socket.SendAsync(Encoding.ASCII.GetBytes("+PONG\r\n"));
+            socket.SendAsync(Encoding.ASCII.GetBytes("+PONG\r\n"));
+        }
+    }
+    catch (SocketException e)
+    {
+        Console.WriteLine($"SocketException: {e.Message}");
+    }
+    finally
+    {
+        socket.Close();
     }
 }
 
@@ -27,6 +38,7 @@ try
         var clientSocket = server.AcceptSocket();
 
         Thread clientThread = new Thread(() => HandleConnectionAsync(clientSocket));
+        clientThread.Start();
     }
 }
 catch (SocketException e)
