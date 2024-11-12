@@ -1,6 +1,23 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using codecrafters_redis.src;
+
+static ClientCommand ParseCommand(string receivedText)
+{
+    if (receivedText.StartsWith("PING", StringComparison.OrdinalIgnoreCase))
+    {
+        return ClientCommand.Ping;
+    }
+    else if (receivedText.StartsWith("ECHO", StringComparison.OrdinalIgnoreCase))
+    {
+        return ClientCommand.Echo;
+    }
+    else
+    {
+        return ClientCommand.Unknown;
+    }
+}
 
 static void HandleConnectionAsync(Socket socket)
 {
@@ -15,7 +32,26 @@ static void HandleConnectionAsync(Socket socket)
             if (bytesRead == 0)
                 break;
 
-            socket.Send(Encoding.ASCII.GetBytes("+PONG\r\n"));
+            string receivedText = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+
+            var splitText = receivedText.Split("\r\n");
+            var commandString = splitText[2];
+
+            ClientCommand command = ParseCommand(commandString);
+
+            switch (command)
+            {
+                case ClientCommand.Ping:
+                    socket.Send(Encoding.ASCII.GetBytes("+PONG\r\n"));
+                    break;
+                case ClientCommand.Echo:
+                    var echoStr = splitText[4];
+                    var newStr = $"${echoStr.Length}\r\n{echoStr}\r\n";
+                    socket.Send(Encoding.ASCII.GetBytes(newStr));
+                    break;
+                default:
+                    throw new Exception("Uknown command");
+            }
         }
     }
     catch (SocketException e)
