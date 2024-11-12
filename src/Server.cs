@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using codecrafters_redis.src;
 
 static ClientCommand ParseCommand(string receivedText)
 {
