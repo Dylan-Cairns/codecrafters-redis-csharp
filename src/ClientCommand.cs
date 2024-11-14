@@ -2,5 +2,7 @@
 {
     Ping,
     Echo,
+    Set,
+    Get,
     Unknown,
 }
