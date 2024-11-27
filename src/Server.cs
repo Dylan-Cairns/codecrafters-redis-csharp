@@ -21,7 +21,10 @@ static ClientCommand ParseCommand(string receivedText)
         : ClientCommand.Unknown;
 }
 
-static void HandleConnectionAsync(Socket socket, ConcurrentDictionary<string, object> storage)
+static void HandleConnectionAsync(
+    Socket socket,
+    ConcurrentDictionary<string, (string Value, DateTime? Expiry)> storage
+)
 {
     try
     {
@@ -54,7 +57,17 @@ static void HandleConnectionAsync(Socket socket, ConcurrentDictionary<string, ob
                 case ClientCommand.Set:
                     var newKey = splitText[4];
                     var newValue = splitText[6];
-                    var isSuccesful = storage.TryAdd(newKey, newValue);
+
+                    DateTime? expiry = null;
+                    if (splitText.Length > 8 && (splitText[8] == "px"))
+                    {
+                        if (int.TryParse(splitText[10], out int expiryTime))
+                        {
+                            expiry = DateTime.UtcNow.AddMilliseconds(expiryTime);
+                        }
+                    }
+
+                    var isSuccesful = storage.TryAdd(newKey, (newValue, expiry));
                     if (isSuccesful)
                     {
                         socket.Send(Encoding.ASCII.GetBytes("+OK\r\n"));
@@ -64,14 +77,25 @@ static void HandleConnectionAsync(Socket socket, ConcurrentDictionary<string, ob
                     var key = splitText[4];
                     if (storage.TryGetValue(key, out var storedValue))
                     {
-                        var storedStr = storedValue.ToString();
-                        var response = $"${storedStr?.Length}\r\n{storedStr}\r\n";
-                        socket.Send(Encoding.ASCII.GetBytes(response));
+                        Console.WriteLine(key + ": " + storedValue);
+                        if (
+                            storedValue.Expiry.HasValue
+                            && storedValue.Expiry.Value <= DateTime.UtcNow
+                        )
+                        {
+                            storage.TryRemove(key, out _);
+                            socket.Send(Encoding.ASCII.GetBytes("$-1\r\n"));
+                            break;
+                        }
+                        else
+                        {
+                            var response =
+                                $"${storedValue.Value.Length}\r\n{storedValue.Value}\r\n";
+                            socket.Send(Encoding.ASCII.GetBytes(response));
+                            break;
+                        }
                     }
-                    else
-                    {
-                        socket.Send(Encoding.ASCII.GetBytes("$-1\r\n")); // Redis NIL response for non-existent key
-                    }
+                    socket.Send(Encoding.ASCII.GetBytes("$-1\r\n"));
                     break;
                 default:
                     throw new Exception("Uknown command");
@@ -94,7 +118,7 @@ try
 {
     server.Start();
 
-    var storage = new ConcurrentDictionary<string, object>();
+    var storage = new ConcurrentDictionary<string, (string Value, DateTime? Expiry)>();
 
     while (true)
     {
